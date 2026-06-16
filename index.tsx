@@ -1,0 +1,8 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ href: "/taxora.html" });
+  },
+  component: () => null,
+});

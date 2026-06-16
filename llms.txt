@@ -1,0 +1,9 @@
+# Taxora
+
+> Taxora is a futuristic Indian Income Tax dashboard for FY 2025–26 with old vs new regime comparison, salary flow visualisation, AI-style insights and mini finance tools.
+
+Taxora helps salaried and self-employed users in India estimate their income tax liability for FY 2025–26 under both the old and new regimes. It includes a tax efficiency score, regime battle comparison, salary flow Sankey, monthly timeline, and mini calculators (EMI, SIP, GST, currency, salary, investment growth). Numbers are indicative only — not a substitute for professional tax filing advice.
+
+## Pages
+
+- [Home](/): Taxora dashboard — income inputs, regime comparison, tax score, salary flow, monthly timeline, slabs and mini financial tools.
