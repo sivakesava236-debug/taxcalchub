@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Taxora — Intelligent Tax Dashboard FY 2025-26</title>
+<meta name="description" content="Taxora — a futuristic AI-style Indian Income Tax dashboard for FY 2025-26. Visualize salary flow, compare regimes, and improve your tax efficiency." />
+<link rel="canonical" href="https://taxcalchub.lovable.app/" />
+<!-- Google Search Console verification (manual HTML tag method). Replace the content value with the token Google gives you in Search Console → Add property → HTML tag. -->
+<meta name="google-site-verification" content="REPLACE_WITH_YOUR_GSC_TOKEN" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ---------- Design tokens ---------- */
+:root{
+  --bg-0:#0a0612;
+  --bg-1:#120a1f;
+  --bg-2:#1c1230;
+  --ink:#f5ecdc;
+  --ink-dim:#b59fc7;
+  --line:rgba(255,220,180,0.08);
+  --glass:rgba(255,220,180,0.04);
+  --glass-2:rgba(255,220,180,0.08);
+  --accent:#f5b54a;
+  --accent-2:#c084fc;
+  --accent-3:#ff7a59;
+  --warn:#ffb454;
+  --danger:#ff5d73;
+  --good:#5cf2a8;
+  --grad: linear-gradient(135deg,#c084fc 0%,#f5b54a 50%,#ff7a59 100%);
+  --grad-2: linear-gradient(135deg,#ff7a59,#c084fc);
+  --shadow: 0 30px 80px -30px rgba(192,132,252,.35),0 8px 24px -8px rgba(0,0,0,.6);
+  --radius: 22px;
+  --radius-sm: 14px;
+}
+html[data-theme="light"]{
+  --bg-0:#eef1fb; --bg-1:#f6f8ff; --bg-2:#ffffff;
+  --ink:#0e1230; --ink-dim:#4b5176;
+  --line:rgba(10,20,60,0.08);
+  --glass:rgba(255,255,255,0.55); --glass-2:rgba(255,255,255,0.75);
+  --shadow: 0 30px 80px -30px rgba(80,90,200,.25),0 8px 24px -8px rgba(0,0,0,.08);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;overflow-x:hidden}
+
+/* Animated background */
+.bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bg-orbs::before,.bg-orbs::after,.bg-orbs span{
+  content:"";position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;
+  animation: float 18s ease-in-out infinite;
+}
+.bg-orbs::before{width:520px;height:520px;background:#c084fc;top:-160px;left:-120px}
+.bg-orbs::after{width:600px;height:600px;background:#ff7a59;bottom:-220px;right:-160px;animation-delay:-6s}
+.bg-orbs span{width:420px;height:420px;background:#f5b54a;top:40%;left:55%;animation-delay:-12s;opacity:.3}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-30px) scale(1.08)}}
+.grid-overlay{position:fixed;inset:0;z-index:-1;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);opacity:.5}
+
+/* Layout shell */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;padding:24px 18px;border-right:1px solid var(--line);background:linear-gradient(180deg,var(--glass),transparent);backdrop-filter: blur(18px)}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.brand-logo{width:42px;height:42px;border-radius:12px;background:var(--grad);position:relative;box-shadow:0 10px 30px -10px rgba(122,162,255,.6)}
+.brand-logo::after{content:"₹";position:absolute;inset:0;display:grid;place-items:center;color:#0b1024;font-weight:700;font-size:22px}
+.brand-name{font-size:22px;font-weight:700;letter-spacing:.5px}
+.brand-tag{font-size:11px;color:var(--ink-dim);letter-spacing:3px;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.nav a{display:flex;align-items:center;gap:12px;padding:11px 14px;color:var(--ink-dim);text-decoration:none;border-radius:12px;font-size:14px;font-weight:500;transition:.25s}
+.nav a:hover,.nav a.active{background:var(--glass-2);color:var(--ink);transform:translateX(2px)}
+.nav .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.side-foot{position:absolute;bottom:20px;left:18px;right:18px;font-size:11px;color:var(--ink-dim);line-height:1.6}
+
+.main{padding:28px 36px 60px;max-width:100%}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.topbar h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.5px}
+.topbar h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.topbar .subtitle{color:var(--ink-dim);font-size:13px;margin-top:4px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--glass);color:var(--ink);font-size:13px;cursor:pointer;transition:.2s;font-family:inherit}
+.chip:hover{border-color:var(--accent-2);transform:translateY(-1px)}
+.chip.solid{background:var(--grad);color:#0b1024;border:none;font-weight:600}
+.chip .pulse{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(92,242,168,.7);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(92,242,168,0)}100%{box-shadow:0 0 0 0 rgba(92,242,168,0)}}
+
+/* Grid */
+.grid{display:grid;gap:20px}
+.cols-12{grid-template-columns:repeat(12,1fr)}
+.span-4{grid-column:span 4}.span-3{grid-column:span 3}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+
+/* Card */
+.card{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius);padding:22px;backdrop-filter: blur(18px);box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card.glow::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.4;pointer-events:none}
+.card h3{margin:0 0 4px;font-size:14px;font-weight:600;letter-spacing:.3px;color:var(--ink-dim);text-transform:uppercase}
+.card .big{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-top:6px;font-family:'JetBrains Mono',monospace}
+.card .sub{color:var(--ink-dim);font-size:12px;margin-top:6px}
+.card .delta{display:inline-block;margin-top:8px;font-size:12px;padding:4px 9px;border-radius:999px;background:rgba(124,249,212,.12);color:var(--accent);border:1px solid rgba(124,249,212,.25)}
+.card .delta.bad{background:rgba(255,93,115,.12);color:var(--danger);border-color:rgba(255,93,115,.25)}
+
+/* Inputs */
+.field{margin-bottom:14px}
+.field label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-dim);margin-bottom:6px;letter-spacing:.3px}
+.field label .val{color:var(--ink);font-family:'JetBrains Mono',monospace;font-weight:600}
+.field input[type=number],.field select{width:100%;background:var(--bg-2);border:1px solid var(--line);color:var(--ink);padding:11px 14px;border-radius:12px;font-family:inherit;font-size:14px;outline:none;transition:.2s}
+.field input[type=number]:focus,.field select:focus{border-color:var(--accent-2);box-shadow:0 0 0 4px rgba(122,162,255,.15)}
+.field input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:6px;background:linear-gradient(90deg,var(--accent-2),var(--accent));outline:none;margin-top:6px}
+.field input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--accent-2);cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.seg{display:flex;background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;padding:9px 12px;background:transparent;border:none;color:var(--ink-dim);font-family:inherit;font-size:13px;border-radius:9px;cursor:pointer;transition:.2s;font-weight:500}
+.seg button.active{background:var(--grad);color:#0b1024;font-weight:600}
+
+/* Sections */
+.section-title{display:flex;align-items:center;gap:12px;margin:36px 0 16px}
+.section-title h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.2px}
+.section-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.section-title .tag{font-size:10px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;padding:3px 8px;border:1px solid rgba(124,249,212,.3);border-radius:999px}
+
+/* Flow */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:14px}
+.flow-node{text-align:center;padding:18px 10px;border-radius:16px;border:1px solid var(--line);background:var(--glass-2);position:relative;transition:.3s}
+.flow-node:hover{transform:translateY(-4px);border-color:var(--accent-2)}
+.flow-node .ico{font-size:22px;margin-bottom:6px}
+.flow-node .lbl{font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:1.5px}
+.flow-node .amt{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:4px}
+.flow-node .pct{font-size:11px;color:var(--accent);margin-top:2px;font-weight:600}
+
+/* Score ring */
+.score-wrap{display:flex;align-items:center;gap:24px}
+.ring{position:relative;width:160px;height:160px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:grid;place-items:center;font-size:38px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.ring .num small{display:block;font-size:11px;color:var(--ink-dim);letter-spacing:2px;text-transform:uppercase;font-weight:500;margin-top:2px}
+
+/* Battle */
+.battle{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:14px}
+.regime-card{padding:22px;border-radius:18px;border:1px solid var(--line);background:var(--bg-2);transition:.3s;position:relative}
+.regime-card.winner{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 60px -20px rgba(124,249,212,.4)}
+.regime-card .name{font-size:14px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:2px}
+.regime-card .tax{font-size:32px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-top:6px}
+.regime-card .meta{font-size:12px;color:var(--ink-dim);margin-top:8px}
+.regime-card .badge{position:absolute;top:-12px;right:14px;padding:4px 10px;font-size:11px;font-weight:600;border-radius:999px;background:var(--grad);color:#0b1024;letter-spacing:1px}
+.vs{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--ink-dim);text-align:center}
+
+/* AI panel */
+.ai-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.ai-item{display:flex;gap:12px;padding:14px;border-radius:14px;background:var(--bg-2);border:1px solid var(--line);transition:.2s}
+.ai-item:hover{border-color:var(--accent-2);transform:translateX(3px)}
+.ai-item .av{width:34px;height:34px;border-radius:10px;background:var(--grad-2);display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.ai-item p{margin:0;font-size:13px;line-height:1.55}
+.ai-item .who{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;font-weight:600;margin-bottom:3px;display:block}
+
+/* Health meter */
+.meter{height:14px;background:var(--bg-2);border-radius:999px;overflow:hidden;border:1px solid var(--line);position:relative}
+.meter-fill{height:100%;background:linear-gradient(90deg,var(--good),var(--warn) 60%,var(--danger));transition:width 1s cubic-bezier(.22,1,.36,1);position:relative}
+.meter-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-dim);margin-top:8px}
+
+/* Steps explain */
+.steps{counter-reset:step;display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.step{display:flex;gap:14px;padding:14px 16px;border-radius:14px;background:var(--bg-2);border:1px solid var(--line);cursor:pointer;transition:.25s}
+.step:hover{border-color:var(--accent-2)}
+.step::before{counter-increment:step;content:counter(step);width:30px;height:30px;border-radius:10px;background:var(--grad);color:#0b1024;display:grid;place-items:center;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.step .body{flex:1}
+.step .body h4{margin:0;font-size:14px;font-weight:600}
+.step .body p{margin:4px 0 0;font-size:13px;color:var(--ink-dim);line-height:1.5}
+.step .body .amt{font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600}
+.step .details{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--ink-dim);line-height:1.6}
+.step.open .details{display:block}
+
+/* Slab table */
+.slab-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+.slab-table th,.slab-table td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);font-family:'JetBrains Mono',monospace}
+.slab-table th{font-size:11px;letter-spacing:1px;color:var(--ink-dim);text-transform:uppercase;font-family:'Space Grotesk',sans-serif;font-weight:600}
+.slab-table tr:hover td{background:var(--glass-2)}
+.slab-table .tax-cell{color:var(--accent);font-weight:600}
+
+/* Mini tools */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:14px}
+.tool{padding:18px;border-radius:16px;background:var(--bg-2);border:1px solid var(--line)}
+.tool h4{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:8px}
+.tool h4 .ico{width:28px;height:28px;border-radius:8px;background:var(--grad-2);display:grid;place-items:center;font-size:14px}
+.tool .desc{font-size:11.5px;color:var(--ink-dim);line-height:1.5;margin:0 0 12px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+.tool .row{display:flex;gap:8px;margin-bottom:8px}
+.tool .col{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tool .col label{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+.tool input,.tool select{width:100%;background:var(--bg-1);border:1px solid var(--line);color:var(--ink);padding:8px 10px;border-radius:9px;font-family:inherit;font-size:13px;outline:none;min-width:0;box-sizing:border-box}
+.tool .out{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--bg-1);border:1px dashed var(--line);font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--accent)}
+
+/* FAQ */
+.faq details{padding:14px 18px;border-radius:14px;background:var(--bg-2);border:1px solid var(--line);margin-bottom:8px;cursor:pointer}
+.faq details[open]{border-color:var(--accent-2)}
+.faq summary{font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.faq summary::after{content:"+";font-size:20px;color:var(--accent);transition:.3s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq p{margin:10px 0 0;font-size:13px;color:var(--ink-dim);line-height:1.6}
+
+/* Timeline */
+.timeline{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:14px}
+.tl-bar{height:80px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;overflow:hidden;transition:.3s;cursor:pointer}
+.tl-bar:hover{transform:translateY(-3px);border-color:var(--accent-2)}
+.tl-bar .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--accent-2),var(--accent));border-radius:0 0 9px 9px;transition:height 1s cubic-bezier(.22,1,.36,1)}
+.tl-bar .m{font-size:10px;color:var(--ink-dim);text-align:center;position:relative;z-index:1}
+.tl-bar .v{font-size:10px;font-weight:600;text-align:center;position:relative;z-index:1;font-family:'JetBrains Mono',monospace}
+
+/* Footer */
+.footer{margin-top:50px;padding:24px;text-align:center;font-size:12px;color:var(--ink-dim);border-top:1px solid var(--line)}
+.disclaimer{margin-top:20px;padding:14px 18px;background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.25);border-radius:14px;font-size:12px;color:var(--warn);text-align:center}
+
+/* Responsive */
+@media (max-width:1024px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto;padding:18px}
+  .sidebar .nav{flex-direction:row;flex-wrap:wrap;overflow-x:auto}
+  .side-foot{display:none}
+  .span-3,.span-4,.span-5{grid-column:span 6}
+  .span-6,.span-7,.span-8{grid-column:span 12}
+  .main{padding:20px}
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .battle{grid-template-columns:1fr;text-align:center}
+  .vs{padding:6px}
+}
+@media (max-width:768px){
+  .span-3,.span-4,.span-5,.span-6,.span-7,.span-8{grid-column:span 12}
+  .topbar h1{font-size:22px}
+  .topbar .subtitle{font-size:12px}
+  .card .big{font-size:24px}
+  .card{padding:16px}
+  .main{padding:16px}
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .flow-node .amt{font-size:15px}
+  .score-wrap{flex-direction:column;align-items:flex-start;gap:16px}
+  .ring{width:140px;height:140px}
+  .ring .num{font-size:32px}
+  .timeline{grid-template-columns:repeat(6,1fr)}
+  .tools-grid{grid-template-columns:1fr}
+  .tool .row{flex-direction:column;gap:10px}
+  .slab-table{font-size:12px;display:block;overflow-x:auto;white-space:nowrap}
+  .sidebar{padding:14px}
+  .sidebar .nav{gap:4px}
+  .sidebar .nav a{padding:8px 10px;font-size:13px}
+  .brand-name{font-size:18px}
+  .section-title h2{font-size:17px}
+  /* Stack inline 2-col input grids into single column */
+  #inputs > div > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important}
+}
+@media (max-width:420px){
+  .flow{grid-template-columns:1fr}
+  .timeline{grid-template-columns:repeat(4,1fr)}
+}
+
+/* Animation reveal */
+.reveal{opacity:0;transform:translateY(20px);animation:rise .8s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+.reveal:nth-child(2){animation-delay:.08s}
+.reveal:nth-child(3){animation-delay:.16s}
+.reveal:nth-child(4){animation-delay:.24s}
+.reveal:nth-child(5){animation-delay:.32s}
+
+/* Tooltip */
+[data-tip]{position:relative;cursor:help;border-bottom:1px dotted var(--ink-dim)}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:var(--bg-2);color:var(--ink);padding:6px 10px;border-radius:8px;font-size:11px;white-space:nowrap;border:1px solid var(--line);z-index:10}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--glass-2);border-radius:8px}
+/* Walkthrough Tour */
+.tour-backdrop{position:fixed;inset:0;background:rgba(4,8,18,.72);backdrop-filter:blur(6px);z-index:998;opacity:0;pointer-events:none;transition:opacity .3s}
+.tour-backdrop.on{opacity:1;pointer-events:auto}
+.tour-spot{position:absolute;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,8,18,.72),0 0 0 3px #7cf9d4,0 0 40px 6px rgba(124,249,212,.45);transition:all .45s cubic-bezier(.5,.1,.2,1);pointer-events:none}
+.tour-pop{position:absolute;max-width:340px;background:linear-gradient(160deg,rgba(30,40,70,.96),rgba(20,24,45,.96));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:18px 18px 14px;color:#fff;z-index:1000;box-shadow:0 22px 50px rgba(0,0,0,.5);transition:all .4s cubic-bezier(.5,.1,.2,1)}
+.tour-pop .step{font-size:11px;letter-spacing:2px;color:#7cf9d4;text-transform:uppercase;font-weight:700}
+.tour-pop h4{margin:6px 0 6px;font-size:18px;font-weight:700}
+.tour-pop p{font-size:13px;line-height:1.5;color:rgba(255,255,255,.78);margin:0 0 14px}
+.tour-pop .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.tour-pop .dots{display:flex;gap:6px}
+.tour-pop .dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.22);display:block}
+.tour-pop .dots i.active{background:#7cf9d4;width:18px;border-radius:4px}
+.tour-pop button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.2);padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;font-weight:600}
+.tour-pop button.primary{background:linear-gradient(135deg,#7aa2ff,#7cf9d4);color:#0a0f1e;border:none}
+.tour-pop button:hover{filter:brightness(1.1)}
+</style>
+</head>
+<body>
+<div class="bg-orbs"><span></span></div>
+<div class="grid-overlay"></div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <div class="brand-name">Taxora</div>
+        <div class="brand-tag">FY 2025-26</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="#dashboard" class="active"><span class="dot"></span>Dashboard</a>
+      <a href="#flow"><span class="dot"></span>Salary Flow</a>
+      <a href="#regime"><span class="dot"></span>Regime Battle</a>
+      <a href="#insights"><span class="dot"></span>AI Insights</a>
+      <a href="#explain"><span class="dot"></span>Tax Breakdown</a>
+      <a href="#timeline"><span class="dot"></span>Timeline</a>
+      <a href="#tools"><span class="dot"></span>Mini Tools</a>
+      <a href="#faq"><span class="dot"></span>FAQ</a>
+    </nav>
+    <div class="side-foot">
+      Built for India · Indicative use only.<br/>Consult a CA for final filing.
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>Taxora — Indian Income Tax Calculator FY 2025–26</h1>
+        <div class="subtitle">Real-time intelligence on your FY 2025-26 income, savings &amp; wealth.</div>
+      </div>
+      <div class="toolbar">
+        <button class="chip" id="themeBtn"><span class="pulse"></span><span id="themeLbl">Dark</span></button>
+        <button class="chip" id="tourBtn">✦ Take Tour</button>
+        <button class="chip" id="voiceBtn">🔊 Voice</button>
+        <button class="chip" id="shareBtn">⇪ Share Card</button>
+        <button class="chip solid" id="pdfBtn">⤓ Download Report</button>
+      </div>
+    </header>
+
+    <!-- INPUTS + KEY METRICS -->
+    <div class="section-title" id="overview"><span class="tag">01</span><h2>Overview &amp; Inputs</h2><div class="line"></div></div>
+    <section class="grid cols-12">
+      <!-- Inputs -->
+      <div class="card span-5 reveal" id="inputs">
+        <h3>Your financial inputs</h3>
+        <div class="big" style="font-size:18px;margin-top:2px">Tune the dials below</div>
+
+        <div style="margin-top:18px">
+          <div class="field">
+            <label for="salary">Annual Salary <span class="val" id="lblSalary">₹12,00,000</span></label>
+            <input type="range" id="salary" min="300000" max="10000000" step="50000" value="1200000">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="field"><label for="other">Other Income <span class="val" id="lblOther">₹0</span></label><input type="range" id="other" min="0" max="2000000" step="10000" value="0"></div>
+            <div class="field"><label for="bonus">Bonus <span class="val" id="lblBonus">₹0</span></label><input type="range" id="bonus" min="0" max="2000000" step="10000" value="0"></div>
+            <div class="field"><label for="free">Freelance <span class="val" id="lblFree">₹0</span></label><input type="range" id="free" min="0" max="2000000" step="10000" value="0"></div>
+            <div class="field"><label for="d80c">80C <span class="val" id="lbl80c">₹1,50,000</span></label><input type="range" id="d80c" min="0" max="150000" step="5000" value="150000"></div>
+            <div class="field"><label for="d80d">80D Health Insurance <span class="val" id="lbl80d">₹25,000</span></label><input type="range" id="d80d" min="0" max="100000" step="1000" value="25000"></div>
+            <div class="field"><label for="hra">HRA Exempt <span class="val" id="lblHra">₹0</span></label><input type="range" id="hra" min="0" max="500000" step="5000" value="0"></div>
+            <div class="field"><label for="hloan">Home Loan Interest <span class="val" id="lblHl">₹0</span></label><input type="range" id="hloan" min="0" max="200000" step="5000" value="0"></div>
+            <div class="field"><label for="od">Other Deductions <span class="val" id="lblOd">₹0</span></label><input type="range" id="od" min="0" max="200000" step="5000" value="0"></div>
+            <div class="field"><label for="exp">Monthly Expenses <span class="val" id="lblExp">₹30,000</span></label><input type="range" id="exp" min="0" max="300000" step="2000" value="30000"></div>
+            <div class="field"><label for="inv">Monthly Investment <span class="val" id="lblInv">₹10,000</span></label><input type="range" id="inv" min="0" max="200000" step="1000" value="10000"></div>
+          </div>
+          <div class="field" style="margin-top:6px">
+            <label for="age">Age Category</label>
+            <select id="age">
+              <option value="below60">Below 60</option>
+              <option value="60to80">Senior (60–80)</option>
+              <option value="above80">Super Senior (80+)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Preferred Regime</label>
+            <div class="seg" id="regimeSeg">
+              <button data-r="auto" class="active">Auto-pick</button>
+              <button data-r="new">New</button>
+              <button data-r="old">Old</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="span-7 grid cols-12" style="grid-column:span 7">
+        <div class="card span-6 reveal glow">
+          <h3>Recommended Tax Payable</h3>
+          <div class="big" id="kpiTax">₹0</div>
+          <span class="delta" id="kpiTaxDelta">Auto-picked: New regime</span>
+          <div class="sub" id="kpiTaxSub">Effective rate 0% of gross</div>
+        </div>
+        <div class="card span-6 reveal">
+          <h3>Annual In-Hand</h3>
+          <div class="big" id="kpiHand">₹0</div>
+          <span class="delta" id="kpiHandPct">72% of gross</span>
+          <div class="sub" id="kpiMonthly">Monthly ~ ₹0</div>
+        </div>
+        <div class="card span-6 reveal" id="scoreCard">
+          <h3>Tax Efficiency Score</h3>
+          <div class="score-wrap" style="margin-top:8px">
+            <div class="ring">
+              <svg width="160" height="160" viewBox="0 0 160 160">
+                <defs>
+                  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#7aa2ff"/>
+                    <stop offset="50%" stop-color="#7cf9d4"/>
+                    <stop offset="100%" stop-color="#ff6ec7"/>
+                  </linearGradient>
+                </defs>
+                <circle cx="80" cy="80" r="68" stroke="rgba(255,255,255,.08)" stroke-width="14" fill="none"/>
+                <circle id="ringFg" cx="80" cy="80" r="68" stroke="url(#ringGrad)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"/>
+              </svg>
+              <div class="num"><div><span id="scoreNum">0</span><small>out of 100</small></div></div>
+            </div>
+            <div>
+              <div style="font-size:13px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:2px">Status</div>
+              <div id="scoreLabel" style="font-size:22px;font-weight:700;margin-top:4px">Calculating…</div>
+              <div id="scoreHint" class="sub" style="margin-top:6px;max-width:240px">We grade you on deduction usage, regime choice and savings rate.</div>
+            </div>
+          </div>
+        </div>
+        <div class="card span-6 reveal">
+          <h3>Financial Health Meter</h3>
+          <div style="margin-top:18px">
+            <div class="meter"><div class="meter-fill" id="healthFill" style="width:0%"></div></div>
+            <div class="meter-ticks"><span>Light</span><span>Moderate</span><span>Heavy</span></div>
+          </div>
+          <div id="healthMsg" class="sub" style="margin-top:14px;font-size:13px">Your tax burden looks balanced. Push 80C &amp; NPS for extra alpha.</div>
+        </div>
+      </div>
+
+      <!-- SALARY FLOW -->
+      <div class="card span-8 reveal" id="flow">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div><h3>Where your salary flows</h3><div class="sub">Animated breakdown of every rupee.</div></div>
+          <div class="chip" style="pointer-events:none"><span class="pulse"></span>Live</div>
+        </div>
+        <div class="flow">
+          <div class="flow-node"><div class="ico">💼</div><div class="lbl">Gross</div><div class="amt" id="fGross">₹0</div><div class="pct">100%</div></div>
+          <div class="flow-node"><div class="ico">🏛️</div><div class="lbl">Tax</div><div class="amt" id="fTax">₹0</div><div class="pct" id="fTaxPct">0%</div></div>
+          <div class="flow-node"><div class="ico">📈</div><div class="lbl">Invest</div><div class="amt" id="fInv">₹0</div><div class="pct" id="fInvPct">0%</div></div>
+          <div class="flow-node"><div class="ico">🛒</div><div class="lbl">Expenses</div><div class="amt" id="fExp">₹0</div><div class="pct" id="fExpPct">0%</div></div>
+          <div class="flow-node"><div class="ico">💰</div><div class="lbl">Savings</div><div class="amt" id="fSav">₹0</div><div class="pct" id="fSavPct">0%</div></div>
+        </div>
+        <div style="margin-top:18px;height:240px;position:relative"><canvas id="pieChart"></canvas></div>
+      </div>
+
+      <!-- Wealth -->
+      <div class="card span-4 reveal">
+        <h3>Wealth Growth Estimate</h3>
+        <div class="sub">If you keep investing monthly @ 12% CAGR</div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+          <div><div class="sub">In 5 years</div><div class="big" id="w5">₹0</div></div>
+          <div><div class="sub">In 10 years</div><div class="big" id="w10">₹0</div></div>
+          <div><div class="sub">In 20 years</div><div class="big" id="w20">₹0</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGIME BATTLE -->
+    <div class="section-title" id="regime"><span class="tag">02</span><h2>Regime Battle — Live</h2><div class="line"></div></div>
+    <div class="card reveal" id="battleCard">
+      <div class="battle">
+        <div class="regime-card" id="oldCard">
+          <div class="name">Old Regime</div>
+          <div class="tax" id="oldTax">₹0</div>
+          <div class="meta" id="oldMeta">With all deductions applied</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="regime-card" id="newCard">
+          <div class="name">New Regime</div>
+          <div class="tax" id="newTax">₹0</div>
+          <div class="meta" id="newMeta">Slab benefit, no deductions</div>
+        </div>
+      </div>
+      <div id="regimeVerdict" class="sub" style="margin-top:18px;text-align:center;font-size:14px"></div>
+    </div>
+
+    <!-- AI INSIGHTS -->
+    <div class="section-title" id="insights"><span class="tag">03</span><h2>AI Tax Coach</h2><div class="line"></div></div>
+    <div class="grid cols-12">
+      <div class="card span-7 reveal">
+        <h3>Smart Suggestions</h3>
+        <div class="ai-list" id="aiList"></div>
+      </div>
+      <div class="card span-5 reveal">
+        <h3>Salary Composition</h3>
+        <div style="height:240px;position:relative"><canvas id="barChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="section-title" id="explain"><span class="tag">04</span><h2>How Your Tax Was Calculated</h2><div class="line"></div></div>
+    <div class="grid cols-12">
+      <div class="card span-7 reveal">
+        <h3>Step-by-step explanation</h3>
+        <div class="steps" id="steps"></div>
+      </div>
+      <div class="card span-5 reveal">
+        <h3>Slab-wise breakdown (<span id="slabRegimeLbl">New</span> regime)</h3>
+        <table class="slab-table" id="slabTable">
+          <thead><tr><th>Slab</th><th>Rate</th><th>Tax</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div style="margin-top:10px;font-size:12px;color:var(--ink-dim)" id="slabFoot"></div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="section-title" id="timeline"><span class="tag">05</span><h2>Monthly Financial Timeline</h2><div class="line"></div></div>
+    <div class="card reveal" id="timelineCard">
+      <h3>Monthly In-Hand across the year</h3>
+      <div class="timeline" id="timelineBars"></div>
+      <div class="sub" style="margin-top:14px">Bars reflect equal monthly distribution. Bonus months show a spike.</div>
+    </div>
+
+    <!-- TOOLS -->
+    <div class="section-title" id="tools"><span class="tag">06</span><h2>Mini Financial Tools</h2><div class="line"></div></div>
+    <div class="tools-grid">
+      <div class="tool">
+        <h4><span class="ico">🏠</span>EMI Calculator</h4>
+        <p class="desc">Estimate your monthly loan instalment for home, car or personal loans. Enter principal, interest rate and tenure.</p>
+        <div class="row"><div class="col"><label for="emiP">Principal (₹)</label><input type="number" id="emiP" placeholder="Principal" value="2500000"></div><div class="col"><label for="emiR">Interest Rate (% p.a.)</label><input type="number" id="emiR" placeholder="Rate %" value="8.5"></div></div>
+        <div class="row"><div class="col"><label for="emiN">Tenure (Years)</label><input type="number" id="emiN" placeholder="Years" value="20"></div></div>
+        <div class="out" id="emiOut">Monthly EMI: —</div>
+      </div>
+      <div class="tool">
+        <h4><span class="ico">📊</span>SIP Calculator</h4>
+        <p class="desc">Project the future value of a monthly mutual-fund SIP using expected annual return and investment horizon.</p>
+        <div class="row"><div class="col"><label for="sipM">Monthly Investment (₹)</label><input type="number" id="sipM" placeholder="Monthly" value="10000"></div><div class="col"><label for="sipR">Expected Return (% p.a.)</label><input type="number" id="sipR" placeholder="Return %" value="12"></div></div>
+        <div class="row"><div class="col"><label for="sipY">Duration (Years)</label><input type="number" id="sipY" placeholder="Years" value="10"></div></div>
+        <div class="out" id="sipOut">Future Value: —</div>
+      </div>
+      <div class="tool">
+        <h4><span class="ico">🧾</span>GST Calculator</h4>
+        <p class="desc">Add or remove GST on any amount across 5%, 12%, 18% and 28% slabs to see net and gross values instantly.</p>
+        <div class="row"><div class="col"><label for="gstA">Amount (₹)</label><input type="number" id="gstA" placeholder="Amount" value="1000"></div><div class="col"><label for="gstR">GST Rate (%)</label><select id="gstR"><option>5</option><option selected>18</option><option>12</option><option>28</option></select></div></div>
+        <div class="row"><div class="col"><label for="gstM">Mode</label><select id="gstM"><option value="add">Add GST</option><option value="rem">Remove GST</option></select></div></div>
+        <div class="out" id="gstOut">Total: —</div>
+      </div>
+      <div class="tool">
+        <h4><span class="ico">💱</span>Currency Converter</h4>
+        <p class="desc">Convert foreign currency amounts (USD, EUR, GBP, AED) into Indian Rupees using indicative reference rates.</p>
+        <div class="row"><div class="col"><label for="curA">Amount</label><input type="number" id="curA" value="100"></div><div class="col"><label for="curF">From Currency</label><select id="curF"><option>USD</option><option>EUR</option><option>GBP</option><option>AED</option></select></div></div>
+        <div class="row"><div class="col"><label>Converted (INR)</label><div class="out" style="margin-top:0" id="curOut">≈ ₹—</div></div></div>
+        <div class="sub" style="font-size:11px">Indicative static rates.</div>
+      </div>
+      <div class="tool">
+        <h4><span class="ico">💸</span>Salary Converter</h4>
+        <p class="desc">Break down annual CTC into monthly, weekly and daily earnings — handy for budgeting and offer comparisons.</p>
+        <div class="row"><div class="col"><label for="salC">Annual CTC (₹)</label><input type="number" id="salC" placeholder="Annual ₹" value="1200000"></div></div>
+        <div class="out" id="salOut">Monthly: — · Daily: —</div>
+      </div>
+      <div class="tool">
+        <h4><span class="ico">🚀</span>Investment Growth Sim</h4>
+        <p class="desc">See how a one-time lumpsum compounds over years at a chosen rate of return — great for FD, gold or equity scenarios.</p>
+        <div class="row"><div class="col"><label for="igP">Lumpsum (₹)</label><input type="number" id="igP" placeholder="Lumpsum" value="100000"></div><div class="col"><label for="igR">Return Rate (% p.a.)</label><input type="number" id="igR" placeholder="Rate %" value="14"></div></div>
+        <div class="row"><div class="col"><label for="igY">Duration (Years)</label><input type="number" id="igY" placeholder="Years" value="15"></div></div>
+        <div class="out" id="igOut">Future Value: —</div>
+      </div>
+    </div>
+
+    <!-- FAQ + How -->
+    <div class="section-title" id="faq"><span class="tag">07</span><h2>How it works &amp; FAQ</h2><div class="line"></div></div>
+    <div class="grid cols-12">
+      <div class="card span-6 reveal">
+        <h3>How Taxora calculates</h3>
+        <ol style="padding-left:18px;line-height:1.8;font-size:14px;color:var(--ink-dim)">
+          <li>We combine salary, bonus, freelance and other income into gross.</li>
+          <li>Standard deduction (₹75,000 new / ₹50,000 old) is applied automatically.</li>
+          <li>Old regime: deducts 80C, 80D, HRA, home-loan interest &amp; more.</li>
+          <li>New regime: applies relaxed slabs without major deductions.</li>
+          <li>Slab tax + 4% cess + applicable surcharge = final liability.</li>
+          <li>Rebate u/s 87A kicks in below ₹7L (new) / ₹5L (old) taxable.</li>
+        </ol>
+      </div>
+      <div class="card span-6 reveal faq">
+        <h3>FAQs</h3>
+        <details><summary>Is Taxora an official tax filing tool?</summary><p>No. It's an indicative dashboard. File via the Income Tax portal or a CA.</p></details>
+        <details><summary>Which slabs are used for FY 2025-26?</summary><p>New regime: 0/4/8/12/16/20/24/28L bands. Old regime: 2.5/5/10L bands with 5/20/30%.</p></details>
+        <details><summary>How is the Tax Efficiency Score computed?</summary><p>Blend of deduction utilisation, regime optimality, savings rate and effective tax %.</p></details>
+        <details><summary>Are my numbers stored?</summary><p>No. Everything runs in your browser. Refresh and it's gone.</p></details>
+      </div>
+    </div>
+
+    <!-- ============ SEO Health Widget ============ -->
+    <div class="section-title" id="seo-health"><span class="tag">✦</span><h2>SEO Health</h2><div class="line"></div></div>
+    <div class="card reveal" id="seoCard" style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="sub">Crawl, index &amp; on-page diagnostics</div>
+          <div style="font-size:22px;font-weight:700;margin-top:4px">Health Score · <span id="seoScore">—</span><small style="color:var(--ink-dim)">/100</small></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="chip" id="seoRefresh">↻ Re-run checks</button>
+          <a class="chip" href="/sitemap.xml" target="_blank" rel="noopener">sitemap.xml</a>
+          <a class="chip" href="/robots.txt" target="_blank" rel="noopener">robots.txt</a>
+          <a class="chip solid" href="https://search.google.com/search-console" target="_blank" rel="noopener">Open Search Console</a>
+        </div>
+      </div>
+      <div class="meter" style="margin-top:14px"><div class="meter-fill" id="seoFill" style="width:0%"></div></div>
+      <ul id="seoList" style="list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px"></ul>
+      <div id="seoAlerts" style="margin-top:14px;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <div class="disclaimer">⚠️ For indicative use only; tax laws change frequently. Consult a qualified tax professional before filing.</div>
+    <footer class="footer">
+      <strong>Taxora</strong> · Crafted for India · FY 2025-26 · © <span id="yr"></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ===================== Utilities ===================== */
+const $ = id => document.getElementById(id);
+const fmt = n => "₹" + Math.round(n).toLocaleString('en-IN');
+const pct = (a,b) => b>0 ? (a/b*100) : 0;
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* ===================== Tax Engine ===================== */
+// FY 2025-26 New Regime slabs (post Budget 2025: 0-4L 0%, 4-8 5%, 8-12 10%, 12-16 15%, 16-20 20%, 20-24 25%, 24+ 30%)
+const NEW_SLABS = [
+  [400000,0],[800000,0.05],[1200000,0.10],[1600000,0.15],
+  [2000000,0.20],[2400000,0.25],[Infinity,0.30]
+];
+// Old regime (below 60)
+const OLD_SLABS_DEFAULT = [[250000,0],[500000,0.05],[1000000,0.20],[Infinity,0.30]];
+const OLD_SLABS_60 = [[300000,0],[500000,0.05],[1000000,0.20],[Infinity,0.30]];
+const OLD_SLABS_80 = [[500000,0],[1000000,0.20],[Infinity,0.30]];
+
+function slabTax(taxable, slabs){
+  let tax=0, prev=0, parts=[];
+  for(const [limit,rate] of slabs){
+    if(taxable<=prev) break;
+    const slice = Math.min(taxable,limit)-prev;
+    const part = slice*rate;
+    tax += part;
+    parts.push({from:prev,to:Math.min(taxable,limit),rate,amount:part});
+    prev=limit;
+    if(taxable<=limit) break;
+  }
+  return {tax,parts};
+}
+function surcharge(tax,income){
+  let r=0;
+  if(income>50000000) r=0.37;
+  else if(income>20000000) r=0.25;
+  else if(income>10000000) r=0.15;
+  else if(income>5000000) r=0.10;
+  return tax*r;
+}
+function calcRegime(regime, inputs){
+  const {salary,other,bonus,free,d80c,d80d,hra,hloan,od,age} = inputs;
+  const gross = salary+other+bonus+free;
+  let taxable, deductions, std;
+  if(regime==='new'){
+    std = 75000;
+    deductions = std;
+    taxable = Math.max(0, gross - std);
+  } else {
+    std = 50000;
+    const totalDed = std + d80c + d80d + hra + hloan + od;
+    deductions = totalDed;
+    taxable = Math.max(0, gross - totalDed);
+  }
+  const slabs = regime==='new' ? NEW_SLABS : (age==='above80'?OLD_SLABS_80 : age==='60to80'?OLD_SLABS_60 : OLD_SLABS_DEFAULT);
+  const {tax:baseTax, parts} = slabTax(taxable, slabs);
+  // Rebate 87A
+  let rebate=0;
+  if(regime==='new' && taxable<=1200000) rebate = Math.min(baseTax, 60000);
+  else if(regime==='old' && taxable<=500000) rebate = Math.min(baseTax, 12500);
+  const afterRebate = Math.max(0, baseTax - rebate);
+  const sur = surcharge(afterRebate, taxable);
+  const cess = (afterRebate+sur)*0.04;
+  const total = afterRebate+sur+cess;
+  return {gross,taxable,deductions,std,baseTax,rebate,surcharge:sur,cess,total,parts,slabs,regime};
+}
+
+/* ===================== Charts ===================== */
+let pieChart, barChart;
+function initCharts(){
+  Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--ink-dim');
+  Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+  const pCtx = $('pieChart').getContext('2d');
+  pieChart = new Chart(pCtx,{type:'doughnut',data:{labels:['Tax','Investments','Expenses','Savings'],datasets:[{data:[1,1,1,1],backgroundColor:['#ff6ec7','#7aa2ff','#ffb454','#7cf9d4'],borderColor:'transparent',borderWidth:0,hoverOffset:14}]},options:{cutout:'68%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8,padding:14}}},animation:{animateRotate:true,duration:900}}});
+  const bCtx = $('barChart').getContext('2d');
+  const grad = bCtx.createLinearGradient(0,0,0,240);
+  grad.addColorStop(0,'#7cf9d4');grad.addColorStop(1,'rgba(122,162,255,.2)');
+  barChart = new Chart(bCtx,{type:'bar',data:{labels:['Salary','Bonus','Freelance','Other','Deductions'],datasets:[{data:[0,0,0,0,0],backgroundColor:grad,borderRadius:10,borderSkipped:false}]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{callback:v=>'₹'+(v/100000).toFixed(0)+'L'}}}}});
+}
+
+/* ===================== State ===================== */
+let regimePref = 'auto';
+function readInputs(){
+  return {
+    salary:+$('salary').value, other:+$('other').value, bonus:+$('bonus').value, free:+$('free').value,
+    d80c:+$('d80c').value, d80d:+$('d80d').value, hra:+$('hra').value, hloan:+$('hloan').value, od:+$('od').value,
+    exp:+$('exp').value*12, invMonthly:+$('inv').value, age:$('age').value
+  };
+}
+function updateLabels(i){
+  $('lblSalary').textContent=fmt(i.salary);$('lblOther').textContent=fmt(i.other);$('lblBonus').textContent=fmt(i.bonus);
+  $('lblFree').textContent=fmt(i.free);$('lbl80c').textContent=fmt(i.d80c);$('lbl80d').textContent=fmt(i.d80d);
+  $('lblHra').textContent=fmt(i.hra);$('lblHl').textContent=fmt(i.hloan);$('lblOd').textContent=fmt(i.od);
+  $('lblExp').textContent=fmt(i.exp/12);$('lblInv').textContent=fmt(i.invMonthly);
+}
+
+/* ===================== Main render ===================== */
+function render(){
+  const i = readInputs();
+  updateLabels(i);
+  const oldR = calcRegime('old', i);
+  const newR = calcRegime('new', i);
+  const chosen = regimePref==='auto' ? (newR.total<=oldR.total?newR:oldR) : (regimePref==='new'?newR:oldR);
+
+  // KPIs
+  $('kpiTax').textContent = fmt(chosen.total);
+  $('kpiTaxDelta').textContent = `Auto-picked: ${chosen.regime==='new'?'New':'Old'} regime`;
+  $('kpiTaxDelta').className = 'delta';
+  $('kpiTaxSub').textContent = `Effective rate ${pct(chosen.total,oldR.gross).toFixed(1)}% of gross`;
+
+  const inHand = oldR.gross - chosen.total;
+  $('kpiHand').textContent = fmt(inHand);
+  $('kpiHandPct').textContent = `${pct(inHand,oldR.gross).toFixed(1)}% of gross`;
+  $('kpiMonthly').textContent = `Monthly ~ ${fmt(inHand/12)}`;
+
+  // Flow
+  const annualInv = i.invMonthly*12;
+  const expenses = i.exp;
+  const savings = Math.max(0, inHand - annualInv - expenses);
+  $('fGross').textContent=fmt(oldR.gross);
+  $('fTax').textContent=fmt(chosen.total);$('fTaxPct').textContent=pct(chosen.total,oldR.gross).toFixed(1)+'%';
+  $('fInv').textContent=fmt(annualInv);$('fInvPct').textContent=pct(annualInv,oldR.gross).toFixed(1)+'%';
+  $('fExp').textContent=fmt(expenses);$('fExpPct').textContent=pct(expenses,oldR.gross).toFixed(1)+'%';
+  $('fSav').textContent=fmt(savings);$('fSavPct').textContent=pct(savings,oldR.gross).toFixed(1)+'%';
+
+  // Pie + Bar
+  pieChart.data.datasets[0].data=[chosen.total,annualInv,expenses,savings];pieChart.update();
+  barChart.data.datasets[0].data=[i.salary,i.bonus,i.free,i.other,chosen.regime==='new'?75000:(50000+i.d80c+i.d80d+i.hra+i.hloan+i.od)];barChart.update();
+
+  // Regime battle
+  $('oldTax').textContent=fmt(oldR.total);
+  $('newTax').textContent=fmt(newR.total);
+  $('oldMeta').textContent=`Taxable ${fmt(oldR.taxable)} · Deductions ${fmt(oldR.deductions)}`;
+  $('newMeta').textContent=`Taxable ${fmt(newR.taxable)} · Std ded ₹75,000`;
+  $('oldCard').classList.toggle('winner', oldR.total<=newR.total);
+  $('newCard').classList.toggle('winner', newR.total<oldR.total);
+  document.querySelectorAll('.regime-card .badge').forEach(b=>b.remove());
+  const winner = oldR.total<=newR.total ? $('oldCard') : $('newCard');
+  const badge = document.createElement('div');badge.className='badge';badge.textContent='SMARTER';winner.appendChild(badge);
+  const diff = Math.abs(oldR.total-newR.total);
+  $('regimeVerdict').innerHTML = diff<1 ? 'Both regimes are practically equal for your profile.' :
+    `<strong>${oldR.total<newR.total?'Old':'New'} regime</strong> saves you <strong style="color:var(--accent)">${fmt(diff)}</strong> (${pct(diff,oldR.gross).toFixed(2)}% of gross).`;
+
+  // Score
+  let score = 50;
+  score += Math.min(20, (i.d80c/150000)*20);
+  score += Math.min(10, (i.d80d/25000)*10);
+  score += Math.min(15, (annualInv/oldR.gross)*60);
+  score -= Math.min(20, pct(chosen.total,oldR.gross)*0.7);
+  score = Math.max(5, Math.min(99, Math.round(score)));
+  $('scoreNum').textContent = score;
+  const ring = $('ringFg'); const circ = 2*Math.PI*68;
+  ring.style.strokeDashoffset = circ - (circ*score/100);
+  $('scoreLabel').textContent = score>=75?'Excellent':score>=55?'Good':score>=35?'Average':'Needs work';
+  $('scoreLabel').style.color = score>=75?'var(--good)':score>=55?'var(--accent)':score>=35?'var(--warn)':'var(--danger)';
+
+  // Health meter
+  const burden = pct(chosen.total, oldR.gross);
+  $('healthFill').style.width = Math.min(100, burden*5)+'%';
+  $('healthMsg').textContent = burden<8 ? 'Light burden — you have great room to invest more.' : burden<18 ? 'Moderate burden — consider 80C / NPS top-ups.' : 'Heavy burden — explore old regime + max deductions.';
+
+  // AI suggestions
+  const tips = [];
+  if(i.d80c<150000) tips.push({who:'80C Coach',ico:'💡',t:`Investing ₹${(150000-i.d80c).toLocaleString('en-IN')} more in ELSS/PPF saves up to ₹${Math.round((150000-i.d80c)*0.3).toLocaleString('en-IN')} in tax under the old regime.`});
+  if(i.d80d<25000) tips.push({who:'Health',ico:'🛡️',t:`Buy a ₹${(25000-i.d80d).toLocaleString('en-IN')} health insurance plan — premium qualifies under 80D.`});
+  if(oldR.total<newR.total && regimePref==='new') tips.push({who:'Regime',ico:'🔀',t:`Old regime saves you ${fmt(newR.total-oldR.total)} — switch when filing.`});
+  if(newR.total<oldR.total && regimePref==='old') tips.push({who:'Regime',ico:'🔀',t:`New regime is leaner by ${fmt(oldR.total-newR.total)} — consider switching.`});
+  if(annualInv/oldR.gross<0.2) tips.push({who:'Wealth',ico:'📈',t:`Your investment rate is ${(annualInv/oldR.gross*100).toFixed(1)}%. Aim for 20%+ to compound aggressively.`});
+  if(i.hra===0 && i.salary>500000) tips.push({who:'HRA',ico:'🏠',t:`Living on rent? Claiming HRA exemption can shave a chunk off the old regime.`});
+  if(tips.length===0) tips.push({who:'Coach',ico:'🌟',t:`You're optimised. Consider NPS Tier-1 for an extra ₹50,000 deduction (80CCD-1B).`});
+  $('aiList').innerHTML = tips.map(t=>`<div class="ai-item"><div class="av">${t.ico}</div><div><span class="who">${t.who}</span><p>${t.t}</p></div></div>`).join('');
+
+  // Wealth
+  const r=0.12/12;
+  function fv(n){const m=n*12;return i.invMonthly*((Math.pow(1+r,m)-1)/r)*(1+r)}
+  $('w5').textContent=fmt(fv(5));$('w10').textContent=fmt(fv(10));$('w20').textContent=fmt(fv(20));
+
+  // Steps
+  const stepData = [
+    {h:'Gross Income Assembled',p:`Salary ${fmt(i.salary)} + Bonus ${fmt(i.bonus)} + Freelance ${fmt(i.free)} + Other ${fmt(i.other)} = <span class="amt">${fmt(oldR.gross)}</span>`,d:'Every taxable income head is summed before any deduction is applied.'},
+    {h:'Standard Deduction',p:`A flat <span class="amt">${fmt(chosen.std)}</span> is auto-deducted under the ${chosen.regime} regime.`,d:'Standard deduction was raised to ₹75,000 in the new regime from FY 2024-25.'},
+    {h:'Deductions Applied',p: chosen.regime==='old' ? `80C ${fmt(i.d80c)} · 80D ${fmt(i.d80d)} · HRA ${fmt(i.hra)} · Home Loan ${fmt(i.hloan)} · Other ${fmt(i.od)} = <span class="amt">${fmt(chosen.deductions-chosen.std)}</span> extra.` : `New regime ignores 80C/80D etc. Only standard deduction applies.`,d:'The old regime rewards documented investments and spending; the new regime offers wider slabs instead.'},
+    {h:'Taxable Income',p:`Gross − Deductions = <span class="amt">${fmt(chosen.taxable)}</span>`,d:'This is the figure your slabs are computed against.'},
+    {h:'Slab-wise Base Tax',p:`Total base tax across all bands = <span class="amt">${fmt(chosen.baseTax)}</span>`,d:'See the slab table on the right for the exact distribution.'},
+    {h:'Rebate u/s 87A',p:`Rebate applied: <span class="amt">${fmt(chosen.rebate)}</span>`,d:chosen.regime==='new'?'Up to ₹60,000 rebate if taxable ≤ ₹12,00,000 (new regime).':'Up to ₹12,500 rebate if taxable ≤ ₹5,00,000 (old regime).'},
+    {h:'Surcharge (if any)',p:`Surcharge: <span class="amt">${fmt(chosen.surcharge)}</span>`,d:'10% above ₹50L · 15% above ₹1Cr · 25% above ₹2Cr.'},
+    {h:'Health & Education Cess (4%)',p:`Cess: <span class="amt">${fmt(chosen.cess)}</span>`,d:'Levied on (tax + surcharge). Goes towards public health & education.'},
+    {h:'Final Tax Payable',p:`<span class="amt" style="font-size:18px">${fmt(chosen.total)}</span>`,d:`That's ${pct(chosen.total,oldR.gross).toFixed(2)}% of your gross income.`},
+  ];
+  $('steps').innerHTML = stepData.map(s=>`<div class="step"><div class="body"><h4>${s.h}</h4><p>${s.p}</p><div class="details">${s.d}</div></div></div>`).join('');
+  document.querySelectorAll('.step').forEach(s=>s.onclick=()=>s.classList.toggle('open'));
+
+  // Slab table
+  $('slabRegimeLbl').textContent = chosen.regime==='new'?'New':'Old';
+  const tbody = $('slabTable').querySelector('tbody');
+  tbody.innerHTML = chosen.parts.map(p=>{
+    const from = (p.from/100000).toFixed(p.from%100000?1:0)+'L';
+    const to = p.to===Infinity?'∞':(p.to/100000).toFixed(p.to%100000?1:0)+'L';
+    return `<tr><td>₹${from} – ₹${to}</td><td>${(p.rate*100).toFixed(0)}%</td><td class="tax-cell">${fmt(p.amount)}</td></tr>`;
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--ink-dim)">No taxable income</td></tr>';
+  $('slabFoot').textContent = `Base ${fmt(chosen.baseTax)} − Rebate ${fmt(chosen.rebate)} + Surcharge ${fmt(chosen.surcharge)} + Cess ${fmt(chosen.cess)} = ${fmt(chosen.total)}`;
+
+  // Timeline
+  const m = Array.from({length:12},(_,k)=>k);
+  const baseMonthly = inHand/12;
+  const peak = baseMonthly*1.4;
+  const bars = m.map(k=>{
+    const val = (k===2||k===8) ? peak : baseMonthly;
+    return val;
+  });
+  const max = Math.max(...bars);
+  const months = ['A','M','J','J','A','S','O','N','D','J','F','M'];
+  $('timelineBars').innerHTML = bars.map((v,k)=>`<div class="tl-bar" title="${fmt(v)}"><div class="fill" style="height:${(v/max*88).toFixed(0)}%"></div><div class="v">${(v/1000).toFixed(0)}k</div><div class="m">${months[k]}</div></div>`).join('');
+}
+
+/* ===================== Inputs wiring ===================== */
+['salary','other','bonus','free','d80c','d80d','hra','hloan','od','exp','inv','age'].forEach(id=>{
+  $(id).addEventListener('input',render);
+});
+document.querySelectorAll('#regimeSeg button').forEach(b=>{
+  b.onclick=()=>{document.querySelectorAll('#regimeSeg button').forEach(x=>x.classList.remove('active'));b.classList.add('active');regimePref=b.dataset.r;render();}
+});
+
+/* ===================== Mini tools ===================== */
+function emi(){
+  const P=+$('emiP').value, R=+$('emiR').value/12/100, N=+$('emiN').value*12;
+  const e = P*R*Math.pow(1+R,N)/(Math.pow(1+R,N)-1);
+  $('emiOut').textContent = isFinite(e)?`Monthly EMI: ${fmt(e)} · Total: ${fmt(e*N)}`:'—';
+}
+function sip(){
+  const M=+$('sipM').value, r=+$('sipR').value/12/100, n=+$('sipY').value*12;
+  const fv = M*((Math.pow(1+r,n)-1)/r)*(1+r);
+  $('sipOut').textContent = isFinite(fv)?`Future Value: ${fmt(fv)}`:'—';
+}
+function gst(){
+  const a=+$('gstA').value, r=+$('gstR').value/100, mode=$('gstM').value;
+  const out = mode==='add' ? a*(1+r) : a/(1+r);
+  $('gstOut').textContent = `${mode==='add'?'Total':'Base'}: ${fmt(out)}`;
+}
+function cur(){
+  const rates={USD:84,EUR:91,GBP:107,AED:23};
+  const a=+$('curA').value, r=rates[$('curF').value];
+  $('curOut').textContent = `≈ ${fmt(a*r)}`;
+}
+function salc(){
+  const a=+$('salC').value;
+  $('salOut').textContent = `Monthly: ${fmt(a/12)} · Daily: ${fmt(a/365)}`;
+}
+function ig(){
+  const P=+$('igP').value, r=+$('igR').value/100, y=+$('igY').value;
+  $('igOut').textContent = `Future Value: ${fmt(P*Math.pow(1+r,y))}`;
+}
+['emiP','emiR','emiN'].forEach(id=>$(id).addEventListener('input',emi));
+['sipM','sipR','sipY'].forEach(id=>$(id).addEventListener('input',sip));
+['gstA','gstR','gstM'].forEach(id=>$(id).addEventListener('input',gst));
+['curA','curF'].forEach(id=>$(id).addEventListener('input',cur));
+$('salC').addEventListener('input',salc);
+['igP','igR','igY'].forEach(id=>$(id).addEventListener('input',ig));
+
+/* ===================== Theme + actions ===================== */
+$('themeBtn').onclick=()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur==='light'?'':'light';
+  document.documentElement.setAttribute('data-theme',next);
+  $('themeLbl').textContent = next==='light'?'Light':'Dark';
+};
+$('pdfBtn').onclick=()=>{window.print();};
+$('shareBtn').onclick=async()=>{
+  const text=`My Taxora summary — Tax: ${$('kpiTax').textContent} · In-Hand: ${$('kpiHand').textContent} · Score: ${$('scoreNum').textContent}/100`;
+  try{await navigator.clipboard.writeText(text);$('shareBtn').textContent='✓ Copied!';setTimeout(()=>$('shareBtn').textContent='⇪ Share Card',1500);}catch(e){alert(text);}
+};
+
+/* ===================== Walkthrough Tour ===================== */
+const TOUR_STEPS=[
+  {sel:'#inputs',title:'Your Inputs',body:'Adjust salary, deductions and expenses. Every slider instantly recomputes the entire dashboard.'},
+  {sel:'#scoreCard',title:'Tax Efficiency Score',body:'A 0–100 grade based on how well you use deductions, your regime choice and your savings rate.'},
+  {sel:'#battleCard',title:'Regime Battle',body:'Live head-to-head between the Old and New regimes. The "Smarter Choice" badge picks the one that saves you more tax.'},
+  {sel:'#flow',title:'Salary Flow',body:'See exactly where every rupee goes — tax, investments, expenses and savings — visualised as nodes and a pie chart.'},
+  {sel:'#timelineCard',title:'Monthly Timeline',body:'Your in-hand income spread across the 12 months of FY 2025–26, with bonus spikes highlighted.'}
+];
+(function tour(){
+  const back=document.createElement('div');back.className='tour-backdrop';
+  const spot=document.createElement('div');spot.className='tour-spot';
+  const pop=document.createElement('div');pop.className='tour-pop';
+  back.appendChild(spot);back.appendChild(pop);document.body.appendChild(back);
+  let i=0;
+  // ---- Voice narration (Web Speech API) ----
+  const synth=window.speechSynthesis;
+  let voiceOn=(()=>{try{return localStorage.getItem('taxora_voice')!=='0';}catch(e){return true;}})();
+  let voices=[];
+  function loadVoices(){voices=synth?synth.getVoices():[];}
+  if(synth){loadVoices();synth.onvoiceschanged=loadVoices;}
+  function pickVoice(){
+    if(!voices.length)return null;
+    const prefs=[/en-IN/i,/en-GB/i,/Google.*English/i,/Samantha/i,/en-US/i,/^en/i];
+    for(const p of prefs){const v=voices.find(x=>p.test(x.lang)||p.test(x.name));if(v)return v;}
+    return voices[0];
+  }
+  function speak(text){
+    if(!synth||!voiceOn)return;
+    try{synth.cancel();
+      const u=new SpeechSynthesisUtterance(text);
+      const v=pickVoice();if(v)u.voice=v;
+      u.rate=1;u.pitch=1;u.volume=1;
+      synth.speak(u);
+    }catch(e){}
+  }
+  function stopSpeak(){try{synth&&synth.cancel();}catch(e){}}
+  function place(){
+    const s=TOUR_STEPS[i];const el=document.querySelector(s.sel);if(!el)return next();
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>{
+      const r=el.getBoundingClientRect();const pad=10;
+      const top=r.top+window.scrollY-pad,left=r.left+window.scrollX-pad,w=r.width+pad*2,h=r.height+pad*2;
+      spot.style.top=top+'px';spot.style.left=left+'px';spot.style.width=w+'px';spot.style.height=h+'px';
+      const dots=TOUR_STEPS.map((_,k)=>`<i class="${k===i?'active':''}"></i>`).join('');
+      const vIcon=voiceOn?'🔊':'🔇';
+      pop.innerHTML=`<div class="step">Step ${i+1} of ${TOUR_STEPS.length}</div><h4>${s.title}</h4><p>${s.body}</p><div class="row"><div class="dots">${dots}</div><div style="display:flex;gap:6px"><button id="tVoice" title="Toggle voice">${vIcon}</button><button id="tSkip">Skip</button><button id="tNext" class="primary">${i===TOUR_STEPS.length-1?'Finish':'Next →'}</button></div></div>`;
+      const vw=window.innerWidth,vh=window.innerHeight;const pw=340,ph=pop.offsetHeight||180;
+      let py=r.bottom+window.scrollY+14;let px=r.left+window.scrollX;
+      if(r.bottom+ph+30>vh){py=r.top+window.scrollY-ph-14;}
+      if(px+pw>window.scrollX+vw-16)px=window.scrollX+vw-pw-16;
+      if(px<window.scrollX+16)px=window.scrollX+16;
+      if(py<window.scrollY+16)py=window.scrollY+16;
+      pop.style.top=py+'px';pop.style.left=px+'px';
+      document.getElementById('tNext').onclick=next;
+      document.getElementById('tSkip').onclick=end;
+      document.getElementById('tVoice').onclick=()=>{
+        voiceOn=!voiceOn;
+        try{localStorage.setItem('taxora_voice',voiceOn?'1':'0');}catch(e){}
+        document.getElementById('tVoice').textContent=voiceOn?'🔊':'🔇';
+        if(voiceOn)speak(s.title+'. '+s.body);else stopSpeak();
+        syncVoiceBtn();
+      };
+      speak(s.title+'. '+s.body);
+    },380);
+  }
+  function next(){stopSpeak();i++;if(i>=TOUR_STEPS.length)return end();place();}
+  function end(){stopSpeak();back.classList.remove('on');setTimeout(()=>{i=0;},400);try{localStorage.setItem('taxora_tour','1');}catch(e){}}
+  function start(){i=0;back.classList.add('on');place();}
+  function syncVoiceBtn(){const b=document.getElementById('voiceBtn');if(b)b.textContent=(voiceOn?'🔊':'🔇')+' Voice';}
+  document.getElementById('tourBtn').onclick=start;
+  // Global voice toggle chip
+  const vb=document.getElementById('voiceBtn');
+  if(vb){vb.textContent=(voiceOn?'🔊':'🔇')+' Voice';
+    vb.onclick=()=>{voiceOn=!voiceOn;try{localStorage.setItem('taxora_voice',voiceOn?'1':'0');}catch(e){}
+      syncVoiceBtn();if(!voiceOn)stopSpeak();
+      else{const intro="Welcome to Taxora. Your futuristic Indian income tax dashboard for financial year 2025 to 26.";speak(intro);}
+    };
+  }
+  window.addEventListener('keydown',e=>{if(!back.classList.contains('on'))return;if(e.key==='Escape')end();if(e.key==='ArrowRight'||e.key==='Enter')next();});
+  back.addEventListener('click',e=>{if(e.target===back)end();});
+  window.addEventListener('beforeunload',stopSpeak);
+  setTimeout(()=>{try{if(!localStorage.getItem('taxora_tour'))start();}catch(e){}},900);
+})();
+
+/* ===================== Boot ===================== */
+window.addEventListener('load',()=>{
+  initCharts();render();emi();sip();gst();cur();salc();ig();
+});
+</script>
+
+<script>
+/* ============ SEO Health Widget ============ */
+(function(){
+  const listEl = document.getElementById('seoList');
+  const alertsEl = document.getElementById('seoAlerts');
+  const scoreEl = document.getElementById('seoScore');
+  const fillEl = document.getElementById('seoFill');
+  const btn = document.getElementById('seoRefresh');
+  if(!listEl) return;
+
+  const sev = { ok:{c:'#4ade80',i:'✓'}, warn:{c:'#f5b54a',i:'!'}, err:{c:'#ff7a59',i:'✗'} };
+
+  function row(label, status, detail, action){
+    const s = sev[status];
+    return `<li style="border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--glass)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:${s.c}22;color:${s.c};align-items:center;justify-content:center;font-weight:700">${s.i}</span>
+        <strong style="font-size:13px">${label}</strong>
+      </div>
+      <div class="sub" style="margin-top:6px;font-size:12px">${detail}</div>
+      ${action?`<div style="margin-top:8px">${action}</div>`:''}
+    </li>`;
+  }
+
+  async function check(url, opts){
+    try{
+      const r = await fetch(url, Object.assign({cache:'no-store'}, opts||{}));
+      const text = await r.text();
+      return { ok:r.ok, status:r.status, text, headers:r.headers };
+    }catch(e){ return { ok:false, status:0, text:'', error:String(e) }; }
+  }
+
+  async function run(){
+    listEl.innerHTML = '<li class="sub" style="padding:8px">Running checks…</li>';
+    alertsEl.innerHTML = '';
+    const results = [];
+    const alerts = [];
+
+    // 1. robots.txt
+    const robots = await check('/robots.txt');
+    if(robots.ok && /Sitemap:/i.test(robots.text)){
+      results.push(['robots.txt reachable & references sitemap','ok','HTTP 200 and contains Sitemap directive.']);
+    }else if(robots.ok){
+      results.push(['robots.txt missing Sitemap line','warn','Add a "Sitemap:" directive so crawlers find it.']);
+      alerts.push(['warn','robots.txt does not advertise your sitemap URL.']);
+    }else{
+      results.push(['robots.txt unreachable','err',`HTTP ${robots.status}. Crawlers may not know what to index.`]);
+      alerts.push(['err','robots.txt could not be fetched.']);
+    }
+    if(robots.ok && /Disallow:\s*\/\s*$/m.test(robots.text)){
+      results.push(['Site is blocking all crawlers','err','robots.txt has "Disallow: /". Remove it to be indexed.']);
+      alerts.push(['err','You are blocking all search engines via robots.txt.']);
+    }
+
+    // 2. sitemap.xml
+    const sm = await check('/sitemap.xml');
+    if(sm.ok && /<urlset|<sitemapindex/.test(sm.text)){
+      const count = (sm.text.match(/<loc>/g)||[]).length;
+      results.push([`sitemap.xml valid (${count} URL${count===1?'':'s'})`,'ok','Submit it inside Google Search Console → Sitemaps.',
+        '<a class="chip" href="https://search.google.com/search-console/sitemaps" target="_blank" rel="noopener">Submit in GSC</a>']);
+    }else{
+      results.push(['sitemap.xml missing or invalid','err',`HTTP ${sm.status}. Generate one at /sitemap.xml.`]);
+      alerts.push(['err','sitemap.xml is missing or malformed.']);
+    }
+
+    // 3. GSC verification meta
+    const ver = document.querySelector('meta[name="google-site-verification"]');
+    if(!ver){
+      results.push(['Google Search Console not verified','warn','Add a google-site-verification meta tag in <head>.']);
+      alerts.push(['warn','GSC verification meta tag is missing.']);
+    }else if(/REPLACE_WITH_YOUR_GSC_TOKEN/.test(ver.content)){
+      results.push(['GSC meta tag is a placeholder','warn','Paste your token from Search Console → HTML tag method.',
+        '<a class="chip" href="https://search.google.com/search-console/welcome" target="_blank" rel="noopener">Get your token</a>']);
+      alerts.push(['warn','Replace the placeholder google-site-verification token.']);
+    }else{
+      results.push(['GSC meta verification tag present','ok','Token: '+ver.content.slice(0,12)+'…']);
+    }
+
+    // 4. Title
+    const title = document.title || '';
+    if(title.length < 10) results.push(['Page title too short','err',`Only ${title.length} chars.`]);
+    else if(title.length > 60) results.push(['Page title too long','warn',`${title.length} chars; Google truncates ~60.`]);
+    else results.push(['Title length OK','ok',`${title.length} chars.`]);
+
+    // 5. Meta description
+    const desc = (document.querySelector('meta[name="description"]')||{}).content || '';
+    if(!desc) results.push(['Missing meta description','err','Add <meta name="description"> in <head>.']);
+    else if(desc.length < 70) results.push(['Meta description short','warn',`${desc.length} chars; aim for 120–160.`]);
+    else if(desc.length > 160) results.push(['Meta description long','warn',`${desc.length} chars; Google truncates ~160.`]);
+    else results.push(['Meta description length OK','ok',`${desc.length} chars.`]);
+
+    // 6. Canonical
+    const canon = document.querySelector('link[rel="canonical"]');
+    results.push(canon
+      ? ['Canonical URL set','ok',canon.href]
+      : ['Canonical URL missing','warn','Add <link rel="canonical"> to avoid duplicate-content dilution.']);
+
+    // 7. H1
+    const h1s = document.querySelectorAll('h1');
+    if(h1s.length === 0) results.push(['No H1 on page','err','Every page needs exactly one H1.']);
+    else if(h1s.length > 1) results.push([`${h1s.length} H1 tags`,'warn','Use only one H1 per page.']);
+    else results.push(['Single H1 present','ok',`"${h1s[0].textContent.trim().slice(0,60)}"`]);
+
+    // 8. Viewport
+    results.push(document.querySelector('meta[name="viewport"]')
+      ? ['Mobile viewport set','ok','Page is responsive-ready.']
+      : ['Viewport meta missing','err','Add <meta name="viewport">.']);
+
+    // 9. Open Graph
+    const og = ['og:title','og:description','og:type'].filter(p=>!document.querySelector(`meta[property="${p}"]`));
+    results.push(og.length===0
+      ? ['Open Graph tags complete','ok','og:title, og:description, og:type all present.']
+      : [`Missing OG tags: ${og.join(', ')}`,'warn','Improves link previews on social.']);
+
+    // 10. HTTPS
+    results.push(location.protocol === 'https:'
+      ? ['HTTPS enabled','ok','Secure connection confirmed.']
+      : ['Not served over HTTPS','err','Google penalises non-HTTPS sites.']);
+
+    // 11. JSON-LD
+    results.push(document.querySelector('script[type="application/ld+json"]')
+      ? ['Structured data found','ok','JSON-LD present on page.']
+      : ['No structured data','warn','Add JSON-LD (WebSite, FAQPage, Organization).']);
+
+    // Render
+    listEl.innerHTML = results.map(r=>row(r[0],r[1],r[2],r[3])).join('');
+    const okCount = results.filter(r=>r[1]==='ok').length;
+    const score = Math.round((okCount/results.length)*100);
+    scoreEl.textContent = score;
+    fillEl.style.width = score+'%';
+
+    alertsEl.innerHTML = alerts.length === 0
+      ? `<div class="sub" style="color:#4ade80">No actionable alerts — your SEO basics look healthy.</div>`
+      : alerts.map(([lvl,msg])=>{
+          const s = sev[lvl];
+          return `<div style="border-left:3px solid ${s.c};padding:8px 12px;background:${s.c}11;border-radius:8px;font-size:13px"><strong style="color:${s.c}">${lvl.toUpperCase()}</strong> · ${msg}</div>`;
+        }).join('');
+  }
+
+  btn && btn.addEventListener('click', run);
+  // run after first paint
+  setTimeout(run, 600);
+})();
+</script>
+</body>
+</html>
