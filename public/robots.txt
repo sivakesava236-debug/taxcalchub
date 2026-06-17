@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://taxcalchub.lovable.app/sitemap.xml
